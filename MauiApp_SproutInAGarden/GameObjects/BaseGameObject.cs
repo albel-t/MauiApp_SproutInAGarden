@@ -23,39 +23,7 @@ public class BaseGameObject
         texture = texture_;
 
     }
-    /*
-    public void Draw(SKCanvas canvas)
-    {
-        Texture _texture = TextureManager.GetTexture(texture);
 
-        canvas.Save();
-
-        canvas.Translate(X + _texture.width / 2, Y + _texture.height / 2);
-        canvas.RotateDegrees(Angle);
-        canvas.Translate(-_texture.width / 2, -_texture.height / 2);
-
-        using (var paint = new SKPaint())
-        {
-            paint.Color = Bacground;
-            paint.Style = SKPaintStyle.Fill;
-            paint.IsAntialias = true;
-            canvas.DrawRect(0, 0, _texture.width, _texture.height, paint);
-        }
-
-
-
-        canvas.Save();
-        canvas.Translate(X, Y);
-        canvas.RotateDegrees(Angle);
-        canvas.Scale(Size, Size);
-
-        canvas.DrawBitmap(_texture.img, 0, 0);
-
-        canvas.Restore();
-
-
-    }
-    */
 
     public void Draw(SKCanvas canvas)
     {
@@ -91,3 +59,14 @@ public class BaseGameObject
     }
 
 };
+
+public class Point
+{
+    public float X { get; set; }
+    public float Y { get; set; }
+    Point(float x, float y)
+    {
+        X = x; 
+        Y = y; 
+    }
+}
