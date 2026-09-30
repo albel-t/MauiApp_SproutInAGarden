@@ -8,5 +8,20 @@
     <Grid>
         <skia:SKCanvasView x:Name="GameCanvas" 
                            PaintSurface="OnPaintSurface" />
+
+        <!-- Кнопка поверх канваса, прижата к низу по центру -->
+        <Button x:Name="ActionButton"
+                Text="Действие"
+                Clicked="OnActionButtonClicked"
+                HorizontalOptions="Center"
+                VerticalOptions="End"
+                Margin="0,0,0,30"
+                WidthRequest="180"
+                HeightRequest="55"
+                CornerRadius="28"
+                BackgroundColor="#4CAF50"
+                TextColor="White"
+                FontSize="18"
+                FontAttributes="Bold" />
     </Grid>
 </ContentPage>

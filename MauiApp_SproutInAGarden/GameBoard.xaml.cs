@@ -1,4 +1,5 @@
 using MauiApp_SproutInAGarden.GameObjects;  // ← вот это
+using MauiApp_SproutInAGarden.GameLogic;  // ← вот это
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using static System.Net.Mime.MediaTypeNames;
@@ -11,17 +12,19 @@ public partial class GameBoard : ContentPage, IQueryAttributable
     private string _currentUserName = string.Empty;
     HashSet<BaseGameObject> test_obj = new HashSet<BaseGameObject>(); 
     private System.Timers.Timer _timer;
-
+    private Plant CurrentPlant;// = new Plant();
+    InputOutputStream stream = new FakeStream();
     public GameBoard()
 	{
         
         TextureManager.Init();
         InitializeComponent();
 
+        TagsList.Init();
 
-        test_obj.Add( new BaseGameObject(50, 200,  "tomato_bigstem_example"));
-        test_obj.Add( new BaseGameObject(250, 200, "tomato_smallstem_example"));
-        test_obj.Add( new BaseGameObject(450, 200, "tomato_fruit_example"));
+        //test_obj.Add( new BaseGameObject(50, 200,  "tomato_bigstem_example"));
+        //test_obj.Add( new BaseGameObject(250, 200, "tomato_smallstem_example"));
+        //test_obj.Add( new BaseGameObject(450, 200, "tomato_fruit_example"));
 
         _timer = new System.Timers.Timer(16);
         _timer.Elapsed += (s, e) =>
@@ -69,9 +72,29 @@ public partial class GameBoard : ContentPage, IQueryAttributable
             canvas.DrawText("Привет", 50, 50, font, paint);
         }
 
-        foreach (BaseGameObject test in test_obj)
-        test.Draw(canvas);
+        //foreach (BaseGameObject test in test_obj
+        //test.Draw(canvas);
+        if(CurrentPlant != null)
+        {
+            CurrentPlant.drowPlant().drow(new Vec2d(500, 1200));
+            CurrentPlant.drowPlant().drowFlash(canvas);
+
+        }
 
     }
 
+    private void OnActionButtonClicked(object sender, EventArgs e)
+    {
+        CurrentPlant = new Plant();
+
+        CurrentPlant.connect(stream);
+
+        CurrentPlant.firatTickPlant();
+
+
+        for (int i = 0; i < 10; i++)
+        {
+            CurrentPlant.tickPlant();
+        }
+    }
 }
