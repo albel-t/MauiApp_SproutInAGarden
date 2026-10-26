@@ -30,10 +30,6 @@ namespace MauiApp_SproutInAGarden.GameLogic
         public Random rand;
         public int tick;
         public Vec2d sun;
-       // public static Bitmap bmp;
-       // public static System.Windows.Forms.PictureBox thisPictureBox;
-       // public static Pen pen;
-
         public Plant() : this(new PlantParams() 
         {
             gr = new PP_growing() 
@@ -56,22 +52,6 @@ namespace MauiApp_SproutInAGarden.GameLogic
                 Fall = 0.01,
                 Plasticity = 0.08,
                 Deviation = 0.10
-                /*
-                 * Bushiness =
-                 * Vegetation 
-                 * Slimness = 
-                 * Fade = GetF
-                 * CurlyMin = 
-                 * CurlyMax = 
-                 * 
-                 * Weight = Ge
-                 * Fall = GetF
-                 * Plasticity 
-                 * Deviation =
-                 * 
-                 * 
-                 * 
-                 */
             },
             visual = new PP_visual() 
             {
@@ -84,14 +64,12 @@ namespace MauiApp_SproutInAGarden.GameLogic
             
         }
 
-        public Plant(/*System.Windows.Forms.PictureBox thisPictureBox,*/ PlantParams p)
+        public Plant(PlantParams p)
         {
             Gens = p;
 
-            //Plant.thisPictureBox = thisPictureBox;
             sun = new Vec2d(200, -5000);
             rand = new Random();
-            //bmp = new Bitmap(thisPictureBox.Width, thisPictureBox.Height);
 
             root = new part_of_a_plant(new Vec2d(0, -80), this);
         }
@@ -211,7 +189,7 @@ namespace MauiApp_SproutInAGarden.GameLogic
         string ReadLine();
         void WriteLine(string line);
     }
-    public class part_of_a_plant : /* Plant,*/ TagableType
+    public class part_of_a_plant : TagableType
     {
         public Plant BasePlant { get; }
         part_of_a_plant mainKid;
