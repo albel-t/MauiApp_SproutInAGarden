@@ -10,21 +10,98 @@ public class TextureDB
     public string my_full_path;
     public Dictionary<string, TextureDB> folder = new Dictionary<string, TextureDB>();
     public Dictionary<string, Texture> image = new Dictionary<string, Texture>();
-
+    public TextureDB()
+    {
+    }
     public TextureDB(string path, bool files = true)
     {
-        name = Path.GetFileName(path.TrimEnd('\\', '/'));
-        my_full_path = path.TrimEnd('\\', '/');
+        string root = path.Replace('\\', '/').TrimEnd('/');
+        if (root.Length > 0) root += "/";
 
-        if (!Directory.Exists(path))
-            return;
+        using Stream s = FileSystem.OpenAppPackageFileAsync(root + "manifest.txt").Result;
+        using StreamReader r = new StreamReader(s);
 
-        foreach (string dir in Directory.GetDirectories(path))
-            folder.Add(dir, new TextureDB(dir));
-        foreach (string file in Directory.GetFiles(path))
-            image.Add(file, new Texture(file));
+        string line;
+        while ((line = r.ReadLine()) != null)
+        {
+            string rel = line.Trim().Replace('\\', '/');
+            if (rel.Length == 0) continue;
+
+            string[] parts = rel.Split('/');
+            if (parts.Length < 2) continue;
+
+            string fileName = parts[parts.Length - 1];   // "A.png" / "A_data.txt"
+            string subDir = parts[parts.Length - 2];     // "A"
+
+            // Идём от корня и создаём/находим каждую папку по очереди
+            TextureDB current = this;
+            string currentPath = "";
+
+            // parts.Length - 2, потому что последний элемент — это файл, а предпоследний — буква "A"
+            // Нам надо создать все папки от parts[0] до parts[parts.Length - 2] включительно
+            for (int i = 0; i < parts.Length - 1; i++)
+            {
+                string folderName = parts[i];
+                currentPath = currentPath.Length == 0 ? folderName : currentPath + "/" + folderName;
+
+                if (!current.folder.TryGetValue(folderName, out var next))
+                {
+                    next = new TextureDB
+                    {
+                        name = folderName,
+                        my_full_path = currentPath
+                    };
+                    current.folder.Add(folderName, next);
+                }
+                current = next;
+            }
+
+            // Теперь current — это папка "A", в которую надо положить текстуру
+            if (!fileName.EndsWith("_data.txt") && files)
+            {
+                string dataPath = root + current.my_full_path + "/" + subDir + "_data.txt";
+                int[] nums = ReadNumbers(dataPath);
+
+                // "A.png" → "A"
+                string texName = fileName;
+                int dot = texName.LastIndexOf('.');
+                if (dot >= 0)
+                    texName = texName.Substring(0, dot);
+
+                // Сохраняем под ключом "A", а не "A.png"
+                current.image[texName] = new Texture(root + current.my_full_path, texName, nums);
+            }
+        }
     }
-
+    private static int[] ReadNumbers(string packagePath)
+    {
+        try
+        {
+            using Stream s = FileSystem.OpenAppPackageFileAsync(packagePath).Result;
+            using StreamReader r = new StreamReader(s);
+            return r.ReadToEnd()
+                    .Split(new[] { ' ', '_', '\t', '\r', '\n' },
+                           StringSplitOptions.RemoveEmptyEntries)
+                    .Select(int.Parse)
+                    .ToArray();
+        }
+        catch
+        {
+            return new int[0];
+        }
+    }
+    private static bool PackageFileExists(string path)
+    {
+        try
+        {
+            using var s = FileSystem.OpenAppPackageFileAsync(path).Result;
+            return s != null;
+        }
+        catch
+        {
+            return false;
+        }
+    }
     public void my_full_path_update(string path)
     {
         my_full_path = path.TrimEnd('\\', '/');
@@ -32,10 +109,21 @@ public class TextureDB
         foreach (var sub in folder.Values)
             sub.my_full_path_update(Path.Combine(my_full_path, sub.name));
     }
+    private static readonly Random _random = new Random();
     public Texture this[string path]
     {
         get
         {
+            if(path == "ANY")
+            {
+                var keys = new List<string>(folder.Keys);
+                if (keys.Count == 0)
+                    return null;
+
+                string picked = keys[new Random().Next(keys.Count)];
+
+                return this[picked + "/" + picked];
+            }
             if (string.IsNullOrEmpty(path))
                 return null;
 
@@ -121,19 +209,17 @@ public static class TextureManager
     public static TextureManagerData GetTexture(TextureManagerParams Params)
     {
         TextureManagerData result;// = new TextureManagerData();
-        string new_path = WopkspaceFolder;
-        for (string f = Params.Get(); !Params.Empty(); f = Params.Get())
+        //string new_path = WopkspaceFolder;
+        string new_path = Params.Get();
+        string f;
+        while (!Params.Empty())
         {
-            new_path = new_path + "\\" + f;
-            if(!CheckFolder(new_path))
-            {
-                result = new TextureManagerData(
-                    GetTexture_f(WopkspaceFolder+"\\"+Params.GetReserveData()), 
-                    GetTexture(WopkspaceFolder + "\\" + Params.GetReserveData()));
-                return result;
-            }
+            f = Params.Get();
+            new_path = new_path + "/" + f;
         }
-        result = new TextureManagerData(GetTexture_f(new_path), GetTexture(new_path));
+        result = GetTextureManagerData(new_path);
+        if(result == null)
+        result = GetTextureManagerData("textures/reserve/" + Params.GetReserveData());
         return result;
     }
     private static bool CheckFolder(string path)
@@ -148,6 +234,11 @@ public static class TextureManager
         else
             return false;
         */
+    }
+    public static TextureManagerData GetTextureManagerData(string path)
+    {
+        Texture this_texture = textures_db[path];
+        return new TextureManagerData(this_texture.GetF(), this_texture);
     }
     public static FocusesImg GetTexture_f(string name)
     {
@@ -165,6 +256,10 @@ public class TextureManagerParams
     public TextureManagerParams()
     {
         Params = new Queue<string>();
+    }
+    public TextureManagerParams(TextureManagerParams other)
+    {
+        Params = new Queue<string>(other.Params);
     }
     public TextureManagerParams(Queue<string> input)
     {
@@ -201,6 +296,10 @@ public class TextureManagerData
     public Texture GetTexture()
     {
         return texture;
+    }
+    public string GetTextureName()
+    {
+        return texture.name + "/" + texture.name;
     }
     public FocusesImg GetFocus()
     {
@@ -247,18 +346,29 @@ public class Texture
     public Texture(string name)
     {
         this.name = name;
-        LoadTexture(name); 
+        LoadTexture_name_data(name); 
+    }
+    public Texture(string name, int[] numbers)
+    {
+        this.name = name;
+        LoadTexture(name, numbers); 
+    }
+    public Texture(string path, string name, int[] numbers)
+    {
+        this.name = name;
+        LoadTexture(path + "/" + name, numbers);
+        
     }
     public FocusesImg GetF()
     {
         return f;
     }
 
-    private void LoadTexture(string name)
+    private void LoadTexture_name_data(string name)
     {
         try
         {
-            using Stream stream = FileSystem.OpenAppPackageFileAsync($"{name}.jpg").Result;
+            using Stream stream = FileSystem.OpenAppPackageFileAsync($"{name}.png").Result;
 
             if (stream != null)
             {
@@ -287,7 +397,33 @@ public class Texture
             System.Diagnostics.Debug.WriteLine($"Не удалось загрузить {name}: {ex.Message}");
         }
     }
+    private void LoadTexture(string name, int[] numbers)
+    {
+        try
+        {
+            using Stream stream = FileSystem.OpenAppPackageFileAsync($"{name}.png").Result;
+
+            if (stream != null)
+            {
+                var bitmap = SKBitmap.Decode(stream);
+                if (bitmap != null)
+                {
+                    img = bitmap;
+                    width = bitmap.Width;
+                    height = bitmap.Height;
+                    System.Diagnostics.Debug.WriteLine($"Успешно загружена текстура: {name} ({width}x{height})");
+                }
+            }
+            f = new FocusesImg(
+            new Vec2d(numbers[0], numbers[1]),
+            new Vec2d(numbers[2], numbers[3]));
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Не удалось загрузить {name}: {ex.Message}");
+        }
+    }
 
 
-    
+
 }

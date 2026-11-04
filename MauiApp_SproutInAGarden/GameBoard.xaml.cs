@@ -22,10 +22,6 @@ public partial class GameBoard : ContentPage, IQueryAttributable
 
         TagsList.Init();
 
-        //test_obj.Add( new BaseGameObject(50, 200,  "tomato_bigstem_example"));
-        //test_obj.Add( new BaseGameObject(250, 200, "tomato_smallstem_example"));
-        //test_obj.Add( new BaseGameObject(450, 200, "tomato_fruit_example"));
-
         _timer = new System.Timers.Timer(16);
         _timer.Elapsed += (s, e) =>
         {

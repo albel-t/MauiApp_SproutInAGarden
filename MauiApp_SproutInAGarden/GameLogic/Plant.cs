@@ -200,6 +200,7 @@ namespace MauiApp_SproutInAGarden.GameLogic
         public Vec2d end;
         public PlantTagManager myTags;
         public BaseGameObject my_obj;
+        private bool need_update;
         public part_of_a_plant(Vec2d parent_end, Plant basePlant)
         {
             BasePlant = basePlant;
@@ -207,6 +208,7 @@ namespace MauiApp_SproutInAGarden.GameLogic
             myTags = new PlantTagManager();
             myTags.Add(TagsList.tag_none);
             end = new Vec2d(parent_end);
+            need_update = true;
         }
 
         public void born(string ID)
@@ -295,9 +297,11 @@ namespace MauiApp_SproutInAGarden.GameLogic
 
             if (!myTags.Contains(TagsList.tag_none))
             {
-
-                my_obj = new BaseGameObject(myDot, parentDot);
-
+                if (need_update)
+                {
+                    my_obj = new BaseGameObject(myDot, parentDot);
+                    need_update = false;
+                }
                 if (mainKid != null)
                     mainKid.drow(myDot);
 
@@ -328,6 +332,8 @@ namespace MauiApp_SproutInAGarden.GameLogic
 
         public void oneTick(int len)
         {
+            need_update = true;
+
             if ((len == BasePlant.Gens.gr.MaxLen) || myTags.Contains(TagsList.tag_none) || myTags.Contains(TagsList.tag_dead))
                 return;
 

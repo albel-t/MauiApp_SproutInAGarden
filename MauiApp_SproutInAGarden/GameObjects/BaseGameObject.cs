@@ -18,28 +18,40 @@ public class BaseGameObject
 
     public string texture { get; set; }
 
-    public SKColor Bacground { get; set; } = SKColors.Blue;
+    public SKColor Bacground { get; set; } = SKColors.Transparent;
+
+    public TextureManagerParams params_;
 
 
-    public BaseGameObject(Vec2d f1, Vec2d f2, string texture_ = "27_24_27_165_tomato_bigstem_example")
+    public BaseGameObject(Vec2d f1, Vec2d f2, string texture_ = "ANY")
     {
         F1 = f1;
         F2 = f2;
         texture = texture_;
 
-        var tmp = TextureManager.GetTexture_f(texture);
 
-        F1_ = new Vec2d(tmp[0], tmp[1]);
-        F2_ = new Vec2d(tmp[2], tmp[3]);
-
+        params_ = new TextureManagerParams();
+        params_.Add("tomato");
+        params_.Add("trunk");
     }
 
 
     public void Draw(SKCanvas canvas)
     {
-        Fit();
-        Texture _texture = TextureManager.GetTexture(texture);
 
+        TextureManagerParams params_tmp = new TextureManagerParams( params_);
+       
+        params_tmp.Add("healthy");
+        params_tmp.Add("big");
+        params_tmp.Add(texture);
+        TextureManagerData data = TextureManager.GetTexture(params_tmp);
+        Texture _texture = data.GetTexture();
+        texture = data.GetTextureName();
+        F1_ = data.GetFocus().first;
+        F2_ = data.GetFocus().second;
+
+        Fit();
+        
         if (_texture == null || _texture.img == null)
         {
             return;
